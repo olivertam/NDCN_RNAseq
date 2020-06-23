@@ -1,0 +1,282 @@
+# How to do differential analysis using DESeq2 (with batch correction)
+
+This is a set of commands that you can use to normalize and do
+differential expression analysis on a batch effected dataset
+
+## Setup
+
+You will need to install a few R packages for statistical analyses of
+expression data:
+
+```{r setup}
+if (!requireNamespace("BiocManager", quietly = TRUE)){
+    install.packages("BiocManager")
+}
+BiocManager::install()
+
+for(pkg in c("here","DESeq2","limma","dplyr","ggplots2","gplots")
+if(!requireNamespace(pkg,quietly=TRUE)){
+    BiocManager::install(pkg)
+}
+```
+
+```{r load_libraries}
+library(here)
+library(DESeq2)
+library(dplyr)
+library(limma)
+```
+
+## DESeq2 Statistical Testing 
+
+### Read in the count table
+
+```{r read_table}
+mat = read.table(here("..","correlation","CRISPR_expt.txt",header=T,sep="\t")
+```
+
+### Create experimental design matrix
+
+Assign experimental metadata to a variable, where each row is a sample
+(column on your count table), and each column is a specific metadata
+(e.g. expt and batch)
+
+```{r expt_design}
+expt = rep(c("crispr","crispr","ctrl"),4)
+batch = c(rep("b1",3),rep("b2",3),rep("b3",3),rep("b4",3))
+cData = data.frame(expt,batch)
+rownames(cData) = colnames(expressed_genes)
+```
+
+### Create a DESeq data structure from raw counts for statistical testing
+
+```{r makeDESeqDataset}
+dds = DESeqDataSetFromMatrix(countData=expressed_genes, colData=cData, design= ~ batch + expt)
+```
+
+### Choose and assign reference samples
+
+```{r designate_reference}
+dds$expt = relevel(dds$expt, ref="ctrl")
+```
+
+### Run DESeq on test data
+
+```{r run_DESEQ}
+dds = DESeq(dds)
+```
+
+### Report results to a variable and write to a table
+
+```{r get_results}
+res = results(dds)
+write.table(res, here("DESeq2_results.txt"),sep="\t",quote=F)
+```
+
+### Plot log fold change as a function of transcript abundance
+
+if the data is well normalized, it should be centered around 0 on the
+y-axis. `alpha` is set to 0.05 because of convention
+
+```{R plotMA}
+plotMA(res, 0.05, main="",
+       xlab= "Mean of Normalized counts")
+```
+
+##  Creation of Normalized Count Tables for Plotting
+
+### Normalize counts with DESeq2 size factors and write to a table
+
+```{r norm_count}
+norm = (counts(dds, norm=TRUE))
+write.table(norm, "DESeq2_base_normalized_ct.txt", sep="\t",quote=F,row.names=T,col.names=T)
+```
+
+### Perform a variance stabilizing transformation and write to a table
+
+This is a type of log transformation that is good for comparing between
+datasets.
+
+```{r vst_count}
+vst_norm = vst(dds)
+vst_batch_corr_for_table <- assay(vst_norm)
+
+write.table(vst_batch_corr_for_table, "DESeq2_vst_normalized_ct.txt", sep="\t",quote=F,row.names=T,col.names=T)
+```
+
+## Count Table Batch Correction
+
+### Checking for batch effects in our vst normalized data
+
+```{r plotPCA_batch}
+plotPCA(vst_norm,"batch")
+
+plotPCA(vst_norm,"expt")
+```
+
+The majority of the variance in the data is explained by batch, this is not good when we want to see what is biologically relevent.
+*Note*: DESeq2 has already accounted for batch in its differential testing, we are just fixing our normalized count tables
+
+## Actual batch correction
+
+```{r batch_correction}
+assay(vst_norm) = limma::removeBatchEffect(assay(vst_norm), vst_norm$batch)
+```
+
+Let's check the corrected structure of the data
+
+```{r plotPCA_corrected}
+plotPCA(vst_norm,"batch")
+
+plotPCA(vst_norm,"expt")
+```
+
+Where is most of the variance coming from now? Hopefully what you are actually interested in!
+Now we just have to write the corrected results to a file
+
+```{r write_corrected_counts}
+vst_batch_corr_for_table <- assay(vst_norm)
+write.table(vst_batch_corr_for_table, "DESeq2_vst_normalized_batch_corrected_ct.txt", sep="\t",quote=F,row.names=T,col.names=T)
+```
+
+### Checking normalization
+
+The majority of data should lie on y = x, even between treatment and control
+
+```{r check_normalization}
+vst_batch_corr_for_plot <- as.data.frame(vst_batch_corr_for_table)
+
+vst_batch_corr_for_plot$control <- rowMeans(vst_batch_corr_for_plot[,c("cntrl_1", "cntrl_2", "cntrl_3","cntrl_4")])
+vst_batch_corr_for_plot$kd <- rowMeans(vst_batch_corr_for_plot[,c("kd_1", "kd_2","kd_3","kd_4")])
+
+library(ggplot2)
+
+ggplot(vst_batch_corr_for_plot, aes(x=control, y=kd)) + geom_point() + geom_abline(intercept= 0,slope=1, color='#808e84') + labs(x= "Control VST Normalized Counts", y="KD VST Normalized Counts") + theme_bw()
+```
+
+Looking at the results, we are going with VST, which matches RNA_seq and looks a bit better.
+
+## Plotting our data with heatmaps!!
+
+```{r plotting_setup}
+library(gplots)
+library(RColorBrewer)
+library(tidyr)
+```
+
+First we need to filter our counts that are significant and abundant
+
+### Reload in table to clear assay formatting
+```{r load_table}
+res_no_format = read.table("DESeq2_results.txt", header = TRUE, sep = '\t')
+
+# Making a vector of names
+res_no_format$names = row.names(res_no_format)
+
+# Ordering data based on logfold change to make for a pretty heatmap
+res_no_format_log_fold_ordered = res_no_format[order(-res_no_format$log2FoldChange),]
+```
+
+### Filter for significant and abundant genes
+
+```{r filter_genes}
+# Get a boolean vector where FDR < 0.05 and baseMean >= 300
+res_of_interest_bool = res_no_format_log_fold_ordered$padj < 0.05 & res_no_format_log_fold_ordered$baseMean >= 300
+# Filter on boolean vector
+res_of_interest = res_no_format_log_fold_ordered[res_of_interest_bool,]
+```
+
+### Setting up data and color scheme for plotting
+
+```{r plot_data_setup}
+# Fix data type of normalized counts
+vst_batch_corr_for_filter = as.data.frame(vst_batch_corr_for_table)
+
+# Filter normalized counts for only those of interest (significant and abundant)
+filtered_counts_ordered = vst_batch_corr_for_filter[res_of_interest$names, ]
+
+# Type of RNA is in name, split name and filter on type then rename filtered data frame
+filtered_counts_ordered$names <- row.names(filtered_counts_ordered)
+heat_split <- separate(filtered_counts_ordered, "names", c("type","species"), sep = "_and_" )
+mirnas <- filter(heat_split, type == "miRNA")
+rownames(mirnas) <- mirnas$species
+mirnas$type <- NULL
+mirnas$species <- NULL
+
+# Format as matrix
+heat_matrix = data.matrix(mirnas, rownames.force = NA)
+
+# Pick color scale
+my_palette = colorRampPalette(c("#425ed7", 'white', '#e32636'))(n=21)
+```
+
+### Plot heatmap
+
+```{r plot_heatmap}
+heatmap.2(heat_matrix, density.info="none", trace="none", cexRow=0.5,   margin=c(10,11), col=my_palette, Rowv="none", Colv="none",scale='row', dendrogram='none')
+
+# If you want to save heatmap to a pdf
+pdf(file = "mirnas_heat.pdf", pointsize = 10)   # create pdf for the heat map        
+heatmap.2(heat_matrix, density.info="none", trace="none", cexRow=0.5,   margin=c(10,11), col=my_palette, Rowv="none", Colv="none",scale='row', dendrogram='none')
+dev.off()
+```
+
+## BONUS MATERIAL
+
+What genes are contributing most to the variance in your data?
+
+### PCA Test Similarity with best normalization
+
+```{r pca}
+pca <- prcomp(t(vst_batch_corr_for_table))
+plot(pca$x[,1],pca$x[,2])
+pca.var <-pca$sdev^2
+pca.var.per <- round(pca.var/sum(pca.var)*100,1)
+```
+
+### what is in PCA
+
+This is a plot showing how much variance in your data is explained by
+each principle component
+
+```{r pca_barplot}
+barplot(pca.var.per, main = "Scree Plot",xlab= "Principle Component",ylab="Percent Variation")
+```
+
+This is a plot showing how your samples are distributed along the
+first and second principal component (top two sources of variances)
+
+```{r pca_plot}
+COL = c(rep("Control",4),rep("Knockdown",4))
+pca.data <-data.frame(Sample=rownames(pca$x), X=pca$x[,1], Y=pca$x[,2], COLOR=COL)
+       
+ggplot(data=pca.data, aes(x=X,y=Y,label=Sample, color=COLOR)) + geom_text() + coord_fixed(ratio=1)+ xlab(paste("PC1 - ", pca.var.per[1], "%", sep="")) + ylab(paste("PC2 - ", pca.var.per[2], "%", sep="")) + theme_bw() + ggtitle("K562 sRNA Seq PCA")
+```
+
+### Check loading scores which separate controls and KD
+
+This is your first principle component
+
+```{r loading_score}
+loading_scores <- pca$rotation[,1]
+gene_scores <- sort(abs(loading_scores), decreasing = TRUE)
+top_20_genes <- names(gene_scores[1:20])
+signed_score <- pca$rotation[top_20_genes,1]
+```
+
+#### Check how much higher top weights are than lowest
+
+```{r check_weights}
+gene_scores_low2high <- sort(abs(loading_scores), decreasing = FALSE)
+bottom_20_genes <- names(gene_scores_low2high[1:20])
+signed_bottom_score <- pca$rotation[bottom_20_genes,1]
+```
+
+#### Check abundance of these top loaded genes
+
+We should use normalized data, and not vst-normalized data. The log
+scaling would make numbers seem more reasonable than they actually are
+
+```{r top_abundance}
+abun_top_score <- norm[top_20_genes,]
+```

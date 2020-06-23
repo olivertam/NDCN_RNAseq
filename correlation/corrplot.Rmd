@@ -1,0 +1,193 @@
+## Checking for sample correlation
+
+There are two sources of "variation" in RNA-seq experiments:
+experimental (biological) and technical. Experimental variations are
+changes that might result from a perturbation that we introduced on
+purpose (e.g. gene knockout, differentiation), and are obviously of
+interest to the researcher. Technical variations are changes
+introduced as a result of our experiment that is not related to the
+intended effect (e.g. differences in reagents, transfection or
+differentiation efficiencies).
+
+In most cases, we want the experimental variations to be
+more consistent (and hopefully stronger) than the technical
+variations. One way we can examine that is to have biological
+replicates, and to correlate their outputs to ensure that samples
+treated under the same experimental conditions have similar gene
+expression profiles.
+
+### Experimental setup
+
+We performed CRISPR on a cell line, using two independent guide RNA
+against a gene of interest (guideRNA1 and guideRNA2). We also have a
+control guide RNA (ctrlGuide).
+
+We generated four biological replicates (independent transfections),
+and generated RNAseq libraries. They were sequenced on Illumina,
+aligned to the human genome,  genes were quantified, and their counts
+normalized.
+
+### Correlation analysis
+
+Now, we want to see if the replicates correlate with each other. One
+quick way to do this is to generate a correlation plot using the R
+module `corrplot`
+
+```{r setup}
+if(! requireNamespace("corrplot",quietly=TRUE)){
+    install.packages("corrplot")
+}
+
+library(corrplot)
+```
+
+First we read in the data from the file
+
+```{r readFile}
+data = read.table("CRISPR_expt.txt",sep="\t",header=T,row.names=1)
+```
+
+Then we try to correlate the samples (columns in `data`). We can try
+Pearson's correlation first
+
+```{r firstPlot}
+corr = cor(data,method="pearson")
+corrplot(corr,tl.cex=0.8)
+```
+
+If we take a look at the output, the circles are colored by their
+correlation score (see the key on the right). Most of the circles are
+colored dark blue, suggesting a high correlation coefficient, but it's
+not easy to see the differences
+
+Let's try another visualization method
+
+```{r numberPlot}
+corrplot(corr,method="number",tl.cex=0.8)
+```
+
+Now you can see the values for the Pearson correlation. As you might
+have guessed from the colored circles from before, they are pretty
+high (most are >0.85).
+
+Another visualization that I like to use (only because it gives an
+interesting visual cue for me) is the "ellipse" method.
+
+```{r ellipsePlot}
+corrplot(corr,method="ellipse",tl.cex=0.8)
+```
+
+This is my personal preference, but I like the idea of seeing the
+"shape" of the correlation. The closer to the diagonal (and smaller
+the ellipse), the higher the correlation coefficient. Again, this is
+just my personal preference.
+
+Now that we have some idea of the correlation, we might be able to see
+that some samples are more closely correlated with each other than
+others. While you can always visually inspect them, it is also
+possible to ask `corrplot` to cluster them.
+
+Let's try to do some hierarchical clustering with this plot
+
+```{r hclustPlot}
+corrplot(corr,method="ellipse",tl.cex=0.8,order="hclust")
+```
+
+You can now see that the samples that are more similar to each other
+are being grouped closer to each other. Just visually, you might be
+able to see a big "cluster" of samples in the middle, and the rest on
+the outside.
+
+I'm curious to see what "clusters" are being found by R based on the
+correlation. Given that we can visually see three clusters, I can ask
+`corrplot` to highlight them (based on the hierarchical clustering
+results) and see if it matches our visual inspection.
+
+```{r 3clusters}
+corrplot(corr,method="ellipse",tl.cex=0.8,order="hclust",addrect=3)
+```
+
+You can see that the boxes matches our visual expectation. If we now
+look at the labels, we can see that the top left cluster contains all
+samples from replicate 1, while the bottom right cluster contains all
+samples from replicate 2. The larger middle one contains all samples
+from replicate 3 and 4.
+
+This is telling us that we might have "batch" effects, where some of the
+replicates (each of which is a different transfection experiment) is
+introducing variations in the data. Since we're trying to assess the
+changes in expression between CRISPR and control, the variations from
+the replicates might confound our analysis, and we might get fewer
+"significant" genes.
+
+In fact, if we want to see when the clusters finally separate out the
+CRISPR and control samples, I had to ask for 6 clusters
+
+```{r 6clusters}
+corrplot(corr,method="ellipse",tl.cex=0.8,order="hclust",addrect=6)
+```
+
+Now you can see that the middle cluster is divided into two smaller
+clusters, containing two replicates of the control experiment, and
+four replicates of the CRISPR experiment.
+
+What if we use Spearman's correlation instead of Pearson's
+correlation? Pearson's correlation assumes that there is a linear
+relationship between the values of two samples (so if geneA is 2x
+higher in sample2 vs sample1, then geneB is expected to be 2x higher
+as well). Spearman's correlation looks for a correlation in the rank
+of the values
+
+```{r spearman}
+corr = cor(data,method="spearman")
+corrplot(corr,method="ellipse",tl.cex=0.8,order="hclust")
+```
+
+It's not as clear where the clusters might be in this graph.
+
+Let's try 2 clusters:
+
+```{r spearman2clusters}
+corrplot(corr,method="ellipse",tl.cex=0.8,order="hclust",addrect=2)
+```
+
+We now see that replicates 1 and 2 are in one cluster, while
+replicates 3 and 4 are in another cluster. 
+
+Let's try with 4 clusters
+
+```{r spearman4clusters}
+corrplot(corr,method="ellipse",tl.cex=0.8,order="hclust",addrect=4)
+```
+
+Now we can recapitulate what we saw previously, where samples in
+replicate 1 (and 2) are more correlated to each other than to other
+replicates, whereas samples in replicate 3 and 4 are more correlated
+to their corresponding experiment.
+
+### Conclusions
+
+Based on the graph outputs, we can probably conclude that our
+biological replicates 1 and 2 are showing some "batch" effects. This
+means that, unless we try to correct it (and there are some
+methods out there), it will make it harder for us to perform
+differential expression analysis.
+
+We can see that biological replicates 3 and 4 seem to be
+clustering based on their experimental status (CRISPR vs control). It
+is possible to use these two replicates for downstream analyses.
+
+However, we should always be cautious whenever we decide to "throw
+away" data. What could be the reason behind the variation that we see? 
+
+- Is it due to initial difficulties with the protocol, given the first
+2 replicates might have been the first two attempts? 
+- Should we run one more replicate to ensure that we have optimized the protocol for
+consistency (and thus ensure that they cluster in a way similar to
+replicate 3 and 4)?
+- Can we exclude the possibility that the
+differences are technical variations, rather than biological in
+nature?
+
+
+
