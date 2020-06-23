@@ -146,12 +146,12 @@ The majority of data should lie on y = x, even between treatment and control
 ```{r check_normalization}
 vst_batch_corr_for_plot <- as.data.frame(vst_batch_corr_for_table)
 
-vst_batch_corr_for_plot$control <- rowMeans(vst_batch_corr_for_plot[,c("cntrl_1", "cntrl_2", "cntrl_3","cntrl_4")])
-vst_batch_corr_for_plot$kd <- rowMeans(vst_batch_corr_for_plot[,c("kd_1", "kd_2","kd_3","kd_4")])
+vst_batch_corr_for_plot$control <- rowMeans(vst_batch_corr_for_plot[,grep("ctrlGuide",colnames(vst_batch_corr_for_plot))])
+vst_batch_corr_for_plot$crispr <- rowMeans(vst_batch_corr_for_plot[,grep("guideRNA",colnames(vst_batch_corr_for_plot))])
 
 library(ggplot2)
 
-ggplot(vst_batch_corr_for_plot, aes(x=control, y=kd)) + geom_point() + geom_abline(intercept= 0,slope=1, color='#808e84') + labs(x= "Control VST Normalized Counts", y="KD VST Normalized Counts") + theme_bw()
+ggplot(vst_batch_corr_for_plot, aes(x=control, y=crispr)) + geom_point() + geom_abline(intercept= 0,slope=1, color='#808e84') + labs(x= "Control VST Normalized Counts", y="CRISPR VST Normalized Counts") + theme_bw()
 ```
 
 Looking at the results, we are going with VST, which matches RNA_seq and looks a bit better.
@@ -168,10 +168,7 @@ First we need to filter our counts that are significant and abundant
 
 ### Reload in table to clear assay formatting
 ```{r load_table}
-res_no_format = read.table("DESeq2_results.txt", header = TRUE, sep = '\t')
-
-# Making a vector of names
-res_no_format$names = row.names(res_no_format)
+res_for_plot = read.table("DESeq2_results.txt", header = TRUE, sep = '\t',row.names=1)
 
 # Ordering data based on logfold change to make for a pretty heatmap
 res_no_format_log_fold_ordered = res_no_format[order(-res_no_format$log2FoldChange),]
@@ -193,18 +190,10 @@ res_of_interest = res_no_format_log_fold_ordered[res_of_interest_bool,]
 vst_batch_corr_for_filter = as.data.frame(vst_batch_corr_for_table)
 
 # Filter normalized counts for only those of interest (significant and abundant)
-filtered_counts_ordered = vst_batch_corr_for_filter[res_of_interest$names, ]
-
-# Type of RNA is in name, split name and filter on type then rename filtered data frame
-filtered_counts_ordered$names <- row.names(filtered_counts_ordered)
-heat_split <- separate(filtered_counts_ordered, "names", c("type","species"), sep = "_and_" )
-mirnas <- filter(heat_split, type == "miRNA")
-rownames(mirnas) <- mirnas$species
-mirnas$type <- NULL
-mirnas$species <- NULL
+filtered_counts_ordered = vst_batch_corr_for_filter[match(rownames(vst_bach_corr_for_filter),rownames(res_of_interest), ]
 
 # Format as matrix
-heat_matrix = data.matrix(mirnas, rownames.force = NA)
+heat_matrix = data.matrix(filtered_counts_ordered, rownames.force = NA)
 
 # Pick color scale
 my_palette = colorRampPalette(c("#425ed7", 'white', '#e32636'))(n=21)
@@ -216,7 +205,7 @@ my_palette = colorRampPalette(c("#425ed7", 'white', '#e32636'))(n=21)
 heatmap.2(heat_matrix, density.info="none", trace="none", cexRow=0.5,   margin=c(10,11), col=my_palette, Rowv="none", Colv="none",scale='row', dendrogram='none')
 
 # If you want to save heatmap to a pdf
-pdf(file = "mirnas_heat.pdf", pointsize = 10)   # create pdf for the heat map        
+pdf(file = "sig_gene_heat.pdf", pointsize = 10)   # create pdf for the heat map
 heatmap.2(heat_matrix, density.info="none", trace="none", cexRow=0.5,   margin=c(10,11), col=my_palette, Rowv="none", Colv="none",scale='row', dendrogram='none')
 dev.off()
 ```
