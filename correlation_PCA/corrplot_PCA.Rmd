@@ -257,14 +257,14 @@ try to plot the samples based on two PCs.
 We will now do this for first two PCs, first coloring by experiment:
 
 ```{r expt_pc1_v_pc2}
-plot(pca$rotation[,2],pca$rotation[,1],xlab=paste("PC1 -",pca.var.per[1],"%"),ylab=paste("PC2 -",pca.var.per[2],"%"),pch=19,col=exptCol)
+plot(pca$rotation[,1],pca$rotation[,2],xlab=paste("PC1 -",pca.var.per[1],"%"),ylab=paste("PC2 -",pca.var.per[2],"%"),pch=19,col=exptCol)
 legend("topleft",legend=exptLabels,col=c("red","green"),pch=19,cex=0.8)
 ```
 
 Then by batch:
 
 ```{r batch_pc1_v_pc2}
-plot(pca$rotation[,2],pca$rotation[,1],xlab=paste("PC1 -",pca.var.per[1],"%"),ylab=paste("PC2 -",pca.var.per[2],"%"),pch=19,col=batchCol)
+plot(pca$rotation[,1],pca$rotation[,2],xlab=paste("PC1 -",pca.var.per[1],"%"),ylab=paste("PC2 -",pca.var.per[2],"%"),pch=19,col=batchCol)
 legend("topleft",legend=batchLabels,col=seq(1,length(batchLabels)),pch=19,cex=0.8)
 ```
 
@@ -276,14 +276,14 @@ Only when we look at PC3 and PC4, do we start seeing a separation of samples
 by experiment: 
 
 ```{r expt_pc3_v_pc4}
-plot(pca$rotation[,4],pca$rotation[,3],xlab=paste("PC3 -",pca.var.per[3],"%"),ylab=paste("PC4 -",pca.var.per[4],"%"),pch=19,col=exptCol)
+plot(pca$rotation[,3],pca$rotation[,4],xlab=paste("PC3 -",pca.var.per[3],"%"),ylab=paste("PC4 -",pca.var.per[4],"%"),pch=19,col=exptCol)
 legend("topleft",legend=exptLabels,col=c("red","green"),pch=19,cex=0.8)
 ```
 
 Even then, replicate 2 is still separating out from the other replicates.
 
 ```{r batch_pc3_v_pc4}
-plot(pca$rotation[,4],pca$rotation[,3],xlab=paste("PC3 -",pca.var.per[3],"%"),ylab=paste("PC4 -",pca.var.per[4],"%"),pch=19,col=batchCol)
+plot(pca$rotation[,3],pca$rotation[,4],xlab=paste("PC3 -",pca.var.per[3],"%"),ylab=paste("PC4 -",pca.var.per[4],"%"),pch=19,col=batchCol)
 legend("topleft",legend=batchLabels,col=seq(1,length(batchLabels)),pch=19,cex=0.8)
 ```
 
