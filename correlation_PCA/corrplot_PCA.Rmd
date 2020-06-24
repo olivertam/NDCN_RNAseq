@@ -38,7 +38,7 @@ if(! requireNamespace("corrplot",quietly=TRUE)){
     install.packages("corrplot")
 }
 
-library(corrplot)
+suppressMessages(library(corrplot))
 ```
 
 First we read in the data from the file
