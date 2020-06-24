@@ -43,7 +43,7 @@ library(corrplot)
 
 First we read in the data from the file
 
-```{r readFile}
+```{r readCounts}
 data  <-  read.table(gzfile("CRISPR_expt.txt.gz"),sep="\t",header=T,row.names=1)
 ```
 
@@ -184,7 +184,7 @@ happy to answer them.
 
 First we read in the data from the file
 
-```{r readFile}
+```{r readvst}
 data  <-  read.table(gzfile("CRISPR_expt_vst.txt.gz"),sep="\t",header=T,row.names=1)
 ```
 
@@ -282,7 +282,7 @@ legend("topleft",legend=exptLabels,col=c("red","green"),pch=19,cex=0.8)
 
 Even then, replicate 2 is still separating out from the other replicates.
 
-```{r batch_pc1_v_pc2}
+```{r batch_pc3_v_pc4}
 plot(pca$rotation[,4],pca$rotation[,3],xlab=paste("PC3 -",pca.var.per[3],"%"),ylab=paste("PC4 -",pca.var.per[4],"%"),pch=19,col=batchCol)
 legend("topleft",legend=batchLabels,col=seq(1,length(batchLabels)),pch=19,cex=0.8)
 ```
