@@ -18,7 +18,7 @@ First we would download the FastQC program:
   [here](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip)
 * Unzip the file, and open the FastQC folder
 * Doubleclick on run_fastqc.bat
-![PC batch file](screenshots/fastqc_pc.png | width=300)
+<img src="screenshots/fastqc_pc.png" width="300" />
 
 
 * If you are using a Mac, you can download it [here](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.dmg)

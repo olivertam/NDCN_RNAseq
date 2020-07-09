@@ -19,14 +19,14 @@ You can also obtain FASTQ files from [Gene Expression
 Omnibus](https://www.ncbi.nlm.nih.gov/geo/) and [Short Read
 Archive](https://www.ncbi.nlm.nih.gov/sra), where many people have
 deposited published datasets, or from public consortia such as
-[ENCODE](https://www.encodeproject.org/)
+[ENCODE](https://www.encodeproject.org/).
 
 Whether you are generating your own sequences, or downloading them
 from a resource or collaborator, it is always a good idea to do some
 quick checks on the FASTQ files to see if there are any issues that
 might cause issues with analyses downstream. Here, we use
 [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
-to run some basic diagnostics on some FASTQ files
+to run some basic diagnostics on some FASTQ files.
 
 ### FastQC
 
