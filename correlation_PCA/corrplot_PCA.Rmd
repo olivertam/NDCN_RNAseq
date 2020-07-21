@@ -10,8 +10,7 @@ intended effect (e.g. differences in reagents, transfection or
 differentiation efficiencies).
 
 In most cases, we want the experimental variations to be
-more consistent (and hopefully stronger) than the technical
-variations. One way we can examine that is to have biological
+hopefully stronger than the technical variations. One way we can examine that is to have biological
 replicates, and to correlate their outputs to ensure that samples
 treated under the same experimental conditions have similar gene
 expression profiles.
@@ -23,7 +22,7 @@ against a gene of interest (guideRNA1 and guideRNA2). We also have a
 control guide RNA (ctrlGuide).
 
 We generated four biological replicates (independent transfections),
-and generated RNAseq libraries. They were sequenced on Illumina,
+and made RNAseq libraries. They were sequenced on Illumina,
 aligned to the human genome,  genes were quantified, and their counts
 normalized.
 
@@ -173,10 +172,11 @@ the number of variables in your dataset into a small set of features
 (components) that could still describe the variation in the data.
 
 We are using the same dataset as above, but the values have been
-normalized using [variance-stabilizing
+transformed using [variance-stabilizing
 transformation](https://en.wikipedia.org/wiki/Variance-stabilizing_transformation)
 from
 [DESeq2](http://bioconductor.org/packages/release/bioc/html/DESeq2.html).
+In essence, you are removing most of the zeroes in the dataset, and then "log" transforming.
 If you have any questions about this transformation, Molly will be
 happy to answer them.
 
@@ -240,7 +240,7 @@ If we color the samples by the type of experiment (CRISPR or Control):
 ```{r pc1_expt_plot}
 plot(den,main=paste("PC1 -",pca.var.per[1],"%"),xlab="",ylab="Frequency")
 points(x=pca$rotation[,1],y=yval,col=exptCol,pch=19)
-legend("topright",legend=exptLabels,col=c("red","green"),pch=19,cex=0.8)
+legend("topright",legend=exptLabels,col=c("green","red"),pch=19,cex=0.8)
 ```
 
 If we color the samples by batch number:
@@ -258,7 +258,7 @@ We will now do this for first two PCs, first coloring by experiment:
 
 ```{r expt_pc1_v_pc2}
 plot(pca$rotation[,1],pca$rotation[,2],xlab=paste("PC1 -",pca.var.per[1],"%"),ylab=paste("PC2 -",pca.var.per[2],"%"),pch=19,col=exptCol)
-legend("topleft",legend=exptLabels,col=c("red","green"),pch=19,cex=0.8)
+legend("topleft",legend=exptLabels,col=c("green","red"),pch=19,cex=0.8)
 ```
 
 Then by batch:
@@ -277,9 +277,10 @@ by experiment:
 
 ```{r expt_pc3_v_pc4}
 plot(pca$rotation[,3],pca$rotation[,4],xlab=paste("PC3 -",pca.var.per[3],"%"),ylab=paste("PC4 -",pca.var.per[4],"%"),pch=19,col=exptCol)
-legend("topleft",legend=exptLabels,col=c("red","green"),pch=19,cex=0.8)
+legend("topleft",legend=exptLabels,col=c("green","red"),pch=19,cex=0.8)
 ```
 
+It is important to remember that for PCA, it's not the position on the plot that matters, but its position relative to other samples.
 Even then, replicate 2 is still separating out from the other replicates.
 
 ```{r batch_pc3_v_pc4}
@@ -308,7 +309,7 @@ away" data. What could be the reason behind the variation that we see?
 consistency (and thus ensure that they cluster in a way similar to
 replicate 3 and 4)?
 - Can we exclude the possibility that the
-differences are technical variations, rather than biological in
+differences are biolgical variations, rather than just technical in
 nature?
 
 

@@ -14,7 +14,7 @@ if (!requireNamespace("BiocManager", quietly = TRUE)){
 }
 BiocManager::install()
 
-for(pkg in c("here","DESeq2","limma","dplyr","ggplots2","gplots")
+for(pkg in c("here","DESeq2","limma","dplyr","ggplots2","gplots"))
 if(!requireNamespace(pkg,quietly=TRUE)){
     BiocManager::install(pkg)
 }
@@ -32,7 +32,7 @@ library(limma)
 ### Read in the count table
 
 ```{r read_table}
-mat = read.table(here("..","correlation","CRISPR_expt.txt",header=T,sep="\t")
+mat = read.table(here("..","correlation","CRISPR_expt.txt",header=T,sep="\t"))
 ```
 
 ### Create experimental design matrix
@@ -190,7 +190,7 @@ res_of_interest = res_no_format_log_fold_ordered[res_of_interest_bool,]
 vst_batch_corr_for_filter = as.data.frame(vst_batch_corr_for_table)
 
 # Filter normalized counts for only those of interest (significant and abundant)
-filtered_counts_ordered = vst_batch_corr_for_filter[match(rownames(vst_bach_corr_for_filter),rownames(res_of_interest), ]
+filtered_counts_ordered = vst_batch_corr_for_filter[match(rownames(vst_bach_corr_for_filter),rownames(res_of_interest)), ]
 
 # Format as matrix
 heat_matrix = data.matrix(filtered_counts_ordered, rownames.force = NA)
