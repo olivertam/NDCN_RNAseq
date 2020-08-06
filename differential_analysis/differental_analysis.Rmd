@@ -55,7 +55,7 @@ is a small table with relevant information like experiment, replicate,
 disease state, gender etc.
 
 ```{r readMetadata}
-mdata <- read.table("CRISPR_expt_metadata.txt"),sep="\t",header=T,row.names=1)
+mdata <- read.table("CRISPR_expt_metadata.txt",sep="\t",header=T,row.names=1)
 head(mdata)
 ```
 
@@ -69,16 +69,12 @@ experimental data
 
 ```{r DESeqDataSet}
 dds <- DESeqDataSetFromMatrix(countData = data, colData = mdata, design = ~ experiment)
-
+cat("\n")
+dds$experiment <- relevel(dds$experiment, ref = "control")
 dds
 ```
 
-Let's explain what the commands are doing:
-
-```{r codeExplain1, eval=F)
-dds <- DESeqDataSetFromMatrix(countData = data, colData = mdata, design = ~ experiment)
-dds$experiment <- relevel(dds$experiment, ref = "control")
-```
+Let's explain what the commands are doing
 
 We are generating a `DESeqDataSet` from a counts matrix,
 where we provide the count data  (`data`), the column data (`mdata`),
@@ -94,6 +90,7 @@ Once we have set this up, we can now run `DESeq2` and start the analysis:
 
 ```{r runDESeq2}
 dds <- DESeq(dds)
+dds
 ```
 
 This will run a series of functions, such as estimating size factors,
@@ -107,6 +104,7 @@ the results:
 
 ```{r getResults}
 res <- results(dds, alpha = 0.05)
+summary(res)
 head(res)
 ```
 
@@ -131,6 +129,7 @@ False Discovery Rate (FDR) cutoff less than 0.05:
 
 ```{r getSigResults}
 sig <- res[! is.na(res$padj) & res$padj < 0.05, ]
+summary(sig)
 head(sig)
 ```
 
@@ -151,7 +150,7 @@ gene expression. Deviations from this could indicate some potential
 technical noise.
 
 ```{r plotMA}
-plotMA(res, ylim = c(-3,3)
+plotMA(res, ylim = c(-5,5))
 ```
 
 In the graph above, things that are differentially expressed
@@ -166,14 +165,15 @@ change on the x-axis, and the FDR (-log10) on the y-axis.
 filtered <- res[! is.na(res$padj), ]
 log10FDR <- -1 * log10(filtered$padj)
 voldata <- data.frame(filtered$log2FoldChange, log10FDR)
+colnames(voldata) = c("log2FoldChange","neglog10FDR")
 volcolor <- rep("gray", nrow(voldata))
 volcolor[filtered$padj < 0.05] = "red"
 
-plot(voldata$log2FoldChange, voldata$log10FDR, pch = ".", col=volcolor, xlab = "Log2 fold change", ylab = "-log10 (FDR)")
-legend("bottomright",c("differentially expressed features"), col=c("red"),pch = 20)
+plot(voldata$log2FoldChange, voldata$neglog10FDR, pch = ".", col=volcolor, xlab = "Log2 fold change", ylab = "-log10 (FDR)", ylim = c(0,6), xlim = c(-3,3))
+legend("bottomright",c("Differentially expressed features"), cex = 0.5, col=c("red"), pch = 20)
 ```
 
-Here, we can now see the relationship between fold change and FDR.
+Here, we can now see the relationship between fold change and FDR. There are quite a few genes that show a small fold change (< 2 fold), but still considered significant, while a bunch of genes that have larger fold change (> 2 fold) are not significant. This is not unusual, as this is dependent on how "tightly" these genes are expressed across samples (e.g. genes would not be considered significant if the differences between other variables can explain the variation seen in your experiment)
 
 3) Heatmap
 
@@ -206,7 +206,6 @@ differentially expressed genes across the samples, so we need to
 filter our transformed data for just those genes:
 
 ```{r filterSigHits}
-head(sig)
 sigVst <- vstcounts[match(rownames(sig),rownames(vstcounts)), ]
 head(sigVst)
 ```
@@ -222,7 +221,7 @@ exptCol <- c("red","green")
 names(exptCol) <- c("guideRNA","control")
 gRNAcol <- c("darkred","pink","green")
 names(gRNAcol) <- c("g349","g394","g419")
-repCol <- seq(1,nlevels(rep))
+repCol <- seq(1,nlevels(as.factor(rep)))
 
 columnAnn <- data.frame(expt,gRNA,rep)
 
@@ -236,6 +235,8 @@ names(dirCol) <- c("Upregulated","Downregulated")
 rowAnn <- data.frame(direction)
 
 annColor <- list(direction = dirCol, expt = exptCol, gRNA = gRNAcol, rep = repCol)
+
+annColor
 ```
 
 I tend to sort my gene expression by log2 fold change, rather than use
@@ -245,13 +246,14 @@ sort any row labels the same way.
 ```{r sortVst}
 sigVst <- sigVst[order(sig$log2FoldChange), ]
 direction <- direction[order(sig$log2FoldChange)]
+rowAnn <- data.frame(direction)
 head(sigVst)
 ```
 
 Now we can plot the heatmap:
 
 ```{r heatmap}
-aheatmap(as.matrix(sigVst), color = "-RdBu:256", scale = "row", Rowv = NA, Colv = TRUE, legend = TRUE, cexCol = 0.5, cexCol = 0.1, breaks = 0, annCol = columnAnn, annRow = rowAnn, annColors = annColor)
+aheatmap(as.matrix(sigVst), color = "-RdBu:256", scale = "row", Rowv = NA, Colv = TRUE, legend = TRUE, cexRow = 0.5, cexCol = 0.1, breaks = 0, annCol = columnAnn, annRow = rowAnn, annColors = annColor)
 ```
 
 A few things to notice:
