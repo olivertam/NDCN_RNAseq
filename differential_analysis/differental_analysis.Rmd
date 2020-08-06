@@ -1,0 +1,280 @@
+## Differential expression analysis
+
+The most common question that we have when doing RNA-seq is looking
+for gene expression differences between two criteria (e.g. experiment
+vs control, patients vs unaffected). One way to do this is to run a
+differential expression analysis.
+
+There are numerous methods that have been developed, and the one that
+we're using today has been incorporated to many bulk RNA-seq
+pipelines: the `DESeq2` R package.
+
+### Experimental setup
+
+We performed CRISPR on a cell line, using two independent guide RNA
+against a gene of interest (guideRNA1 and guideRNA2). We also have a
+control guide RNA (ctrlGuide).
+
+We generated four biological replicates (independent transfections),
+and made RNAseq libraries. They were sequenced on Illumina,
+aligned to the human genome,  and gene expression was counted. These
+are "raw counts", which are preferred by `DESeq2` (and another heavily
+used R package in bulk RNA-seq: `edgeR`) as its input.
+
+If you want the full details on how to use `DESeq`, you can read their
+user guide [here](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html)
+
+While the same algorithms might not be used for single-cell analyses,
+the concepts (and inputs) should be similar.
+
+### Setting up our R environment
+
+Hopefully, you have installed the `DESeq2` R package. The following
+code will check that it is installed, and will load the library if found.
+
+```{r DESeq2Setup}
+if(! requireNamespace("DESeq2",quietly=TRUE)){
+    if (! requireNamespace("BiocManager", quietly = TRUE)){
+        install.packages("BiocManager")
+    }
+    BiocManager::install("DESeq2")
+}
+
+library(DESeq2)
+```
+
+First we read in the data from the file. This is a 
+
+```{r readCounts}
+data  <-  read.table(gzfile("CRISPR_expt.cntTable.gz"),sep="\t",header=T,row.names=1)
+head(data)
+```
+
+Then we load some metadata that describes the results. This typically
+is a small table with relevant information like experiment, replicate,
+disease state, gender etc.
+
+```{r readMetadata}
+mdata <- read.table("CRISPR_expt_metadata.txt"),sep="\t",header=T,row.names=1)
+head(mdata)
+```
+
+One thing that you MUST make sure is that your metadata rows matches
+exactly the layout of your data columns. I.e. if the first sample is
+"guideRNA1_rep1", then both the first row of `mdata` and first column
+of `data` should be that.
+
+Now we set up the object (called a `DESeqDataSet`) with our
+experimental data
+
+```{r DESeqDataSet}
+dds <- DESeqDataSetFromMatrix(countData = data, colData = mdata, design = ~ experiment)
+
+dds
+```
+
+Let's explain what the commands are doing:
+
+```{r codeExplain1, eval=F)
+dds <- DESeqDataSetFromMatrix(countData = data, colData = mdata, design = ~ experiment)
+dds$experiment <- relevel(dds$experiment, ref = "control")
+```
+
+We are generating a `DESeqDataSet` from a counts matrix,
+where we provide the count data  (`data`), the column data (`mdata`),
+and provide a "design" of your analysis (i.e. what you are interested
+in). In this case, we are interested to see the changes that are
+influenced by the experiment.
+
+The second line of code is explicitly telling the DESeqDataSet object
+that the reference (`ref`) for the experiment is the value, "control",
+and so we want to compare things relative to control.
+
+Once we have set this up, we can now run `DESeq2` and start the analysis:
+
+```{r runDESeq2}
+dds <- DESeq(dds)
+```
+
+This will run a series of functions, such as estimating size factors,
+dispersion, removing outliers (if required), fitting model, and
+testing. Each of these steps are linked to a separate function that
+you can tweak if you want, but for more analyses, the default setup
+works quite well.
+
+Once `DESeq2` is done with the analysis, it is now time for us to get
+the results:
+
+```{r getResults}
+res <- results(dds, alpha = 0.05)
+head(res)
+```
+
+This generates a table with the following information for each
+feature: 
+
+- baseMean: mean "normalized" expression across all samples
+- log2FoldChange: log2 fold change relative to your `ref` ("control"
+  in our case)
+- lfcSE: log fold change standard error
+- stat: Wald statistics used by the program
+- pvalue: raw p-value from the differential analysis
+- padj: p-value adjusted for multiple testing using Benjamini-Hochberg
+  (a.k.a. FDR)
+  
+While this is really useful to see whether any of your genes of
+interest changed significantly, a more useful output is to get things
+that are "significant".
+
+Here, we are extracting significant gene expression changes using a
+False Discovery Rate (FDR) cutoff less than 0.05:
+
+```{r getSigResults}
+sig <- res[! is.na(res$padj) & res$padj < 0.05, ]
+head(sig)
+```
+
+Now we have a list of genes that are "significantly" different between
+our guide RNA experiment and our control.
+
+### Visualization our data
+
+There are several ways we can visualize our data
+
+1) MA plot
+
+This is a graph that plots the mean expression of your features
+(genes) on the x-axis, and the fold change (e.g. guide vs control) on
+the y-axis. In most cases, you should be seeing most of the genes
+lying on `y = 0`, since we typically don't expect a global change in
+gene expression. Deviations from this could indicate some potential
+technical noise.
+
+```{r plotMA}
+plotMA(res, ylim = c(-3,3)
+```
+
+In the graph above, things that are differentially expressed
+(based on FDR < 0.05) are colored, while others are gray.
+
+2) Volcano plot
+
+This is another way to show the data, where we plot the log fold
+change on the x-axis, and the FDR (-log10) on the y-axis. 
+
+```{r volcanoPlot}
+filtered <- res[! is.na(res$padj), ]
+log10FDR <- -1 * log10(filtered$padj)
+voldata <- data.frame(filtered$log2FoldChange, log10FDR)
+volcolor <- rep("gray", nrow(voldata))
+volcolor[filtered$padj < 0.05] = "red"
+
+plot(voldata$log2FoldChange, voldata$log10FDR, pch = ".", col=volcolor, xlab = "Log2 fold change", ylab = "-log10 (FDR)")
+legend("bottomright",c("differentially expressed features"), col=c("red"),pch = 20)
+```
+
+Here, we can now see the relationship between fold change and FDR.
+
+3) Heatmap
+
+This is a nice way to show gene expression changes across multiple samples
+
+```{r heatmapSetup}
+if(! requireNamespace("NMF",quietly=TRUE)){
+    if (! requireNamespace("BiocManager", quietly = TRUE)){
+        install.packages("BiocManager")
+    }
+    BiocManager::install("NMF")
+}
+
+library(NMF)
+```
+
+One highly recommended thing to do is to first perform a
+variance-stabilizing transformation (In essence, you are removing most
+of the zeroes in the dataset, and then "log" transforming). This can
+be done in DESeq2:
+
+```{r vst}
+vsd <- varianceStabilizingTransformation(dds)
+vstcounts <- assay(vsd)
+head(vstcounts)
+```
+
+For this example, we want to look at the
+differentially expressed genes across the samples, so we need to
+filter our transformed data for just those genes:
+
+```{r filterSigHits}
+head(sig)
+sigVst <- vstcounts[match(rownames(sig),rownames(vstcounts)), ]
+head(sigVst)
+```
+
+Now we need to set up some labels and coloring for the heatmap
+
+```{r heatmapSetup}
+expt <- mdata$experiment
+gRNA <- mdata$guideID
+rep <- mdata$replicate
+
+exptCol <- c("red","green")
+names(exptCol) <- c("guideRNA","control")
+gRNAcol <- c("darkred","pink","green")
+names(gRNAcol) <- c("g349","g394","g419")
+repCol <- seq(1,nlevels(rep))
+
+columnAnn <- data.frame(expt,gRNA,rep)
+
+direction <- rep("No change",nrow(sigVst))
+direction[sig$log2FoldChange > 0] = "Upregulated"
+direction[sig$log2FoldChange < 0] = "Downregulated"
+
+dirCol <- c("red","blue")
+names(dirCol) <- c("Upregulated","Downregulated")
+
+rowAnn <- data.frame(direction)
+
+annColor <- list(direction = dirCol, expt = exptCol, gRNA = gRNAcol, rep = repCol)
+```
+
+I tend to sort my gene expression by log2 fold change, rather than use
+hierarchical clustering in the heatmap. You just have to make sure you
+sort any row labels the same way.
+
+```{r sortVst}
+sigVst <- sigVst[order(sig$log2FoldChange), ]
+direction <- direction[order(sig$log2FoldChange)]
+head(sigVst)
+```
+
+Now we can plot the heatmap:
+
+```{r heatmap}
+aheatmap(as.matrix(sigVst), color = "-RdBu:256", scale = "row", Rowv = NA, Colv = TRUE, legend = TRUE, cexCol = 0.5, cexCol = 0.1, breaks = 0, annCol = columnAnn, annRow = rowAnn, annColors = annColor)
+```
+
+A few things to notice:
+
+- The values are Z-scores, which is a measurement of standard
+  deviation from the mean. In this case, the heatmap calculated the
+  mean value and standard deviation for each gene across all samples,
+  and then colored the heatmap based on deviation from the mean
+  (Z-score of +1 means 1 standard deviation above the mean)
+- I allowed the program to use hierarchical clustering on the samples,
+  but didn't allow it on the genes.
+- There are colored labels for each sample (and technically for each
+  gene), which could be useful when trying to see if certainly
+  annotations (e.g. experiment) cluster.
+
+## Other things we can do
+
+- Run a PCA with the data, using either differentially expressed
+  genes, or top 5000 genes with high median absolute deviation (MAD)
+- What if we have more than two conditions? Can we compare different
+  conditions to each other? Can we compare one condition to all
+  others?
+- Can we account of batch effects using a generalized linear model
+  within DESeq2?
+
+
