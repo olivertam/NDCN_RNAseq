@@ -105,7 +105,6 @@ the results:
 ```{r getResults}
 res <- results(dds, alpha = 0.05)
 summary(res)
-head(res)
 ```
 
 This generates a table with the following information for each
@@ -269,11 +268,18 @@ A few things to notice:
   gene), which could be useful when trying to see if certainly
   annotations (e.g. experiment) cluster.
 
+We could also allow the program to use hierarchical clustering on the genes to see if there are "groups" of genes that have similar expression across the samples.
+
+```{r heatmap2}
+aheatmap(as.matrix(sigVst), color = "-RdBu:256", scale = "row", Rowv = TRUE, Colv = TRUE, legend = TRUE, cexRow = 0.5, cexCol = 0.1, breaks = 0, annCol = columnAnn, annRow = rowAnn, annColors = annColor)
+```
+
+What we can see here is that there are subsets of genes that show differences between the replicates (some that are much higher in certain replicates than others). This is not completely unexpected, as this is the dataset (from our last exercise) where we saw some batch effects in our replicates.
+
 ## Other things we can do
 
 - [What if we have more than two conditions?](#multi_condition) 
-   - Can we compare different  conditions to each other? 
-   - Can we compare one condition to all others?
+   - Can we compare different conditions to each other? 
 - [How can we handle batch effect?](#batch_effect)
 
 ## More than two conditions {#multi_condition}
@@ -347,36 +353,6 @@ Hopefully, there are very few genes that are popping up, but it would
 give us an idea if there are genes that we should be wary of if they
 are highly specific to one guide RNA.
 
-### Advanced case
-
-If you are trying to do a comparison between one
-variable with two or more other variables, it is actually possible.
-
-For example, if you didn't have the experimental condition in your
-metadata, but would like to compare the effects of the two guide RNA
-with the control RNA, you can do the following:
-
-```{r 2guidesVg419}
-res_gRNAvg419  <- results(dds_gRNA, contrast = list(c("guideIDg349","guideIDg394"),c("guideIDg419")), listValues = c(1/2, -1))
-summary(res_gRNAvg419)
-```
-
-This is a little complicated to explain, but instead of providing the
-condition name, test value and reference value, you can provide a list
-of vectors containing the variables in the format of "condition_name +
-value" (no spaces between them). You can then set up two vectors with
-as many variables that you want to combine for your pairwise
-comparison. In addition to the list, you need to provide weights for
-the each pair in the list. In our case, since there are two values in
-the first group, we assign each value as 1/2 of the total. Since the
-total list values should equate to 0, the other side (with only one
-control RNA) gets -1.
-
-In theory, this should be equivalent to doing experiment vs control,
-but there are slight variations since we are treating the two guideRNA
-as independent observations (but manually combining them), whereas the
-other approach would take them all into account.
-
 ## Accounting for batch effects {#batch_effect}
 
 Previously, we had suspected that there are batch effects in our
@@ -399,10 +375,10 @@ Like before, we need to create a DESeqDataSet, but this time, we're
 adding replicate as a new variable in our model.
 
 ```{r DESeqDataSet_GLM}
-dds <- DESeqDataSetFromMatrix(countData = data, colData = mdata, design = ~ replicate + experiment)
+dds_GLM <- DESeqDataSetFromMatrix(countData = data, colData = mdata, design = ~ replicate + experiment)
 cat("\n")
-dds$experiment <- relevel(dds$experiment, ref = "control")
-dds
+dds_GLM$experiment <- relevel(dds_GLM$experiment, ref = "control")
+dds_GLM
 ```
 
 The way the "design formula" is written is starting with the tilde
@@ -411,15 +387,6 @@ want to model (separated by a `+` symbol). The last variable in your
 model is the one that you actually want to do the true comparison,
 while the others are additional variables that needed to be accounted
 for.
-
-In our case, we're just adding the replicate information as part of
-our model, but we technically also have the guide RNA ID as
-well. Thus, we could build a model that would also account for
-variation in the guideRNA used if we wanted to:
-
-``` {r example , eval = FALSE}
-dds_GLM <- DESeqDataSetFromMatrix(countData = data, colData = mdata, design = ~ replicate + guideID + experiment)
-```
 
 We can now run DESeq2 and get the results (using a FDR cutoff of 0.05):
 
@@ -437,7 +404,7 @@ experimental conditions.
 Let's look at the MA and volcano plots:
 
 ```{r GLM_plotMA}
-plotMA(res_GLM, ylim = c(-5,5))
+plotMA(res_GLM)
 ```
 
 ```{r GLM_volcano}
@@ -480,7 +447,3 @@ plotPCA(vsd_corr, intgroup = "replicate", ntop = 500)
 
 Where is most of the variance coming from now? 
 Hopefully what we are actually interested in!
-
-```{r getCorrectedCounts}
-vst_corr_counts <- assay(vst_corr)
-```
