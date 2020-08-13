@@ -304,15 +304,13 @@ head(sigVst)
 
 Now we can plot the heatmap:
 
-`aheatmap` is from the `NMF` package.
+`aheatmap` is from the `NMF` package. We are plotting on-screen,
+as well as to a PNG file called `heatmap.png`
 
 ```{r heatmap}
 aheatmap(as.matrix(sigVst), color = "-RdBu:256", scale = "row", Rowv = NA, Colv = TRUE, legend = TRUE, cexRow = 0.5, cexCol = 0.1, breaks = 0, annCol = columnAnn, annRow = rowAnn, annColors = annColor)
+aheatmap(as.matrix(sigVst), color = "-RdBu:256", scale = "row", Rowv = NA, Colv = TRUE, legend = TRUE, cexRow = 0.5, cexCol = 0.1, breaks = 0, annCol = columnAnn, annRow = rowAnn, annColors = annColor,filename = here("differential_analysis","heatmap.png"))
 ```
-
-Julie: Oliver, it looks like this can't run in RStudio unfortunately. This has been a bug for awhile; maybe we can talk about how to plot this from baseR but this is definitely a bummer. 
-I got this error: `Error in gridPLT() : Figure region too small and/or viewport too large`
-https://github.com/renozao/NMF/issues/65
 
 A few things to notice:
 
