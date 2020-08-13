@@ -41,19 +41,13 @@ if(! requireNamespace("DESeq2",quietly=TRUE)){
 }
 
 library(DESeq2)
-
-if(! requireNamespace("here",quietly=TRUE)){
-  install.packages("here")
-}
-
-library(here)
 ```
 
 First we read in the data from the file. In this exercise, it is a
 gzipped file, but typically it is a plain text table.
 
 ```{r readCounts}
-data  <-  read.table(gzfile(here("differential_analysis", "CRISPR_expt.cntTable.gz")),sep="\t",header=T,row.names=1)
+data  <-  read.table(gzfile("CRISPR_expt.cntTable.gz"),sep="\t",header=T,row.names=1)
 head(data)
 ```
 
@@ -62,7 +56,7 @@ is a small table with relevant information like experiment, replicate,
 disease state, gender etc.
 
 ```{r readMetadata}
-mdata <- read.table(here("differential_analysis", "CRISPR_expt_metadata.txt"),sep="\t",header=T,row.names=1)
+mdata <- read.table("CRISPR_expt_metadata.txt",sep="\t",header=T,row.names=1)
 head(mdata)
 ```
 
