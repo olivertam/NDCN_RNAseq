@@ -472,7 +472,7 @@ legend("bottomright",c("Significant upregulation", "Significant downregulation")
 
 We can also do actual batch correction on the normalized count data so
 that we can use it for downstream analysis or visualization.
-*Note*: DESeq2 has already accounted for batch in its differential testing, we are just fixing our normalized count tables
+*Note*: `DESeq2` has already accounted for batch in its differential testing, we are just fixing our normalized count tables
 
 ```{r batchCorrection}
 if(! requireNamespace("limma",quietly=TRUE)){
