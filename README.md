@@ -71,3 +71,16 @@ the number of variables in your dataset into a small set of features
 also enables visualization of the "spread" of samples based on various
 principal components.
 
+## Differential analysis
+
+The most common question that we have when doing RNA-seq is looking
+for gene expression differences between two criteria (e.g. experiment
+vs control, patients vs unaffected). One way to do this is to run a
+differential expression analysis.
+
+There are numerous methods that have been developed, and the one used
+in this exercise has been incorporated to many bulk RNA-seq
+pipelines: the `DESeq2` R package.
+
+Once the differential analysis is done, you can do some simple
+visualizations to take a look at the data, and see if it makes sense.

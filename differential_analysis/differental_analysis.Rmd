@@ -166,13 +166,22 @@ log10FDR <- -1 * log10(filtered$padj)
 voldata <- data.frame(filtered$log2FoldChange, log10FDR)
 colnames(voldata) = c("log2FoldChange","neglog10FDR")
 volcolor <- rep("gray", nrow(voldata))
-volcolor[filtered$padj < 0.05] = "red"
+volcolor[filtered$padj < 0.05 & filtered$log2FoldChange > 1] = "red"
+volcolor[filtered$padj < 0.05 & filtered$log2FoldChange < -1] = "blue"
 
 plot(voldata$log2FoldChange, voldata$neglog10FDR, pch = ".", col=volcolor, xlab = "Log2 fold change", ylab = "-log10 (FDR)", ylim = c(0,6), xlim = c(-3,3))
-legend("bottomright",c("Differentially expressed features"), cex = 0.5, col=c("red"), pch = 20)
+abline(v = 1, col = "red", lty = 2)
+abline(v = -1, col = "blue", lty = 2)
+abline(h = -log10(0.05), col = "black", lty = 2)
+legend("bottomright",c("Significant upregulation", "Significant downregulation"), cex = 0.5, col=c("red","blue"), pch = 20)
 ```
 
-Here, we can now see the relationship between fold change and FDR. There are quite a few genes that show a small fold change (< 2 fold), but still considered significant, while a bunch of genes that have larger fold change (> 2 fold) are not significant. This is not unusual, as this is dependent on how "tightly" these genes are expressed across samples (e.g. genes would not be considered significant if the differences between other variables can explain the variation seen in your experiment)
+Here, we can now see the relationship between fold change and FDR. I'm
+highlighting genes which have > 2 fold change and FDR < 0.05. Three
+lines are also plotted: blue = 2 fold decrease, red = 2 fold increase,
+black = FDR of 0.05. 
+
+There are quite a few genes that show a small fold change (< 2 fold), but still considered significant, while a bunch of genes that have larger fold change (> 2 fold) are not significant. This is not unusual, as this is dependent on how "tightly" these genes are expressed across samples (e.g. genes would not be considered significant if the differences between other variables can explain the variation seen in your experiment)
 
 3) Heatmap
 
@@ -413,10 +422,14 @@ log10FDR <- -1 * log10(filtered$padj)
 voldata <- data.frame(filtered$log2FoldChange, log10FDR)
 colnames(voldata) = c("log2FoldChange","neglog10FDR")
 volcolor <- rep("gray", nrow(voldata))
-volcolor[filtered$padj < 0.05] = "red"
+volcolor[filtered$padj < 0.05 & filtered$log2FoldChange > 1] = "red"
+volcolor[filtered$padj < 0.05 & filtered$log2FoldChange < -1] = "blue"
 
 plot(voldata$log2FoldChange, voldata$neglog10FDR, pch = ".", col=volcolor, xlab = "Log2 fold change", ylab = "-log10 (FDR)", ylim = c(0,6), xlim = c(-3,3))
-legend("bottomright",c("Differentially expressed features"), cex = 0.5, col=c("red"), pch = 20)
+abline(v = 1, col = "red", lty = 2)
+abline(v = -1, col = "blue", lty = 2)
+abline(h = -log10(0.05), col = "black", lty = 2)
+legend("bottomright",c("Significant upregulation", "Significant downregulation"), cex = 0.5, col=c("red","blue"), pch = 20)
 ```
 
 We can also do actual batch correction on the normalized count data so
