@@ -270,11 +270,7 @@ gRNAcol[mdata$guideID == "g349"] = "darkred"
 gRNAcol[mdata$guideID == "g394"] = "pink"
 gRNAcol[mdata$guideID == "g419"] = "green"
 
-repCol <- as.vector(mdata$replicate)
-repCol[repCol == 1] = palette()[1]
-repCol[repCol == 2] = palette()[2]
-repCol[repCol == 3] = palette()[3]
-repCol[repCol == 4] = palette()[4]
+repCol <- palette()[mdata$replicate]
 
 head(data.frame(exptCol,gRNAcol,repCol))
 ```
