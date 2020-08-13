@@ -234,11 +234,7 @@ variation seen in your experiment)
 3) Heatmap
 
 This is a nice way to show gene expression changes across multiple
-samples. We'll use a plotting function from the `NMF` package.
-
-```{r heatmapSetup}
-library(NMF)
-```
+samples. 
 
 One highly recommended thing to do is to first perform a
 [variance-stabilizing
@@ -262,33 +258,19 @@ sigVst <- vstcounts[match(rownames(sig),rownames(vstcounts)), ]
 head(sigVst)
 ```
 
-Now we need to set up some labels and coloring for the heatmap
+Now we need to set up some coloring for the heatmap
 
 ```{r heatmapSetup}
-expt <- mdata$experiment
-gRNA <- mdata$guideID
-rep <- mdata$replicate
+exptCol  <- rep("black",nrow(mdata))
+exptCol[mdata$experiment == "guideRNA"] = "red"
+exptCol[mdata$experiment == "control"] = "green"
 
-exptCol <- c("red","green")
-names(exptCol) <- c("guideRNA","control")
-gRNAcol <- c("darkred","pink","green")
-names(gRNAcol) <- c("g349","g394","g419")
-repCol <- seq(1,nlevels(as.factor(rep)))
+gRNAcol <- rep("black",nrow(mdata))
+gRNAcol[mdata$guideID == "g349"] = "darkred"
+gRNAcol[mdata$guideID == "g394"] = "pink"
+gRNAcol[mdata$guideID == "g419"] = "green"
 
-columnAnn <- data.frame(expt,gRNA,rep)
-
-direction <- rep("No change",nrow(sigVst))
-direction[sig$log2FoldChange > 0] = "Upregulated"
-direction[sig$log2FoldChange < 0] = "Downregulated"
-
-dirCol <- c("red","blue")
-names(dirCol) <- c("Upregulated","Downregulated")
-
-rowAnn <- data.frame(direction)
-
-annColor <- list(direction = dirCol, expt = exptCol, gRNA = gRNAcol, rep = repCol)
-
-annColor
+repCol <- as.vector(mdata$replicate)
 ```
 
 I tend to sort my gene expression by log2 fold change, rather than use
@@ -297,22 +279,16 @@ sort any row labels the same way.
 
 ```{r sortVst}
 sigVst <- sigVst[order(sig$log2FoldChange), ]
-direction <- direction[order(sig$log2FoldChange)]
-rowAnn <- data.frame(direction)
 head(sigVst)
 ```
 
 Now we can plot the heatmap:
 
-`aheatmap` is from the `NMF` package.
-
 ```{r heatmap}
-aheatmap(as.matrix(sigVst), color = "-RdBu:256", scale = "row", Rowv = NA, Colv = TRUE, legend = TRUE, cexRow = 0.5, cexCol = 0.1, breaks = 0, annCol = columnAnn, annRow = rowAnn, annColors = annColor)
+hcc = hclust(as.dist(1-cor(sigGenes,method="pearson")),method="average")
+heatmap(as.matrix(sigVst), color = colorRampPalette(c("red","blue"))(256), scale = "row", Rowv = NA, Colv = as.dendrogram(hcc), cexRow = 0.5, cexCol = 0.1, breaks = 0, ColSideColors = exptCol)
+legend("topleft",c("guide RNA", "control"), pch = 15, col = c("red", "green"))
 ```
-
-Julie: Oliver, it looks like this can't run in RStudio unfortunately. This has been a bug for awhile; maybe we can talk about how to plot this from baseR but this is definitely a bummer. 
-I got this error: `Error in gridPLT() : Figure region too small and/or viewport too large`
-https://github.com/renozao/NMF/issues/65
 
 A few things to notice:
 
@@ -323,15 +299,16 @@ A few things to notice:
   (Z-score of +1 means 1 standard deviation above the mean)
 - I allowed the program to use hierarchical clustering on the samples,
   but didn't allow it on the genes.
-- There are colored labels for each sample (and technically for each
-  gene), which could be useful when trying to see if certainly
-  annotations (e.g. experiment) cluster.
 
 We could also allow the program to use hierarchical clustering on the
-genes to see if there are "groups" of genes that have similar expression across the samples.
+genes to see if there are "groups" of genes that have similar
+expression across the samples. This time, I'm coloring by guide RNA used
 
 ```{r heatmap2}
-aheatmap(as.matrix(sigVst), color = "-RdBu:256", scale = "row", Rowv = TRUE, Colv = TRUE, legend = TRUE, cexRow = 0.5, cexCol = 0.1, breaks = 0, annCol = columnAnn, annRow = rowAnn, annColors = annColor)
+hcc = hclust(as.dist(1-cor(sigGenes,method="pearson")),method="average")
+hcr = hclust(as.dist(1-cor(t(sigGenes),method="pearson")),method="average")
+heatmap(as.matrix(sigVst), color = colorRampPalette(c("red","blue"))(256), scale = "row", Rowv = as.dendrogram(hcr), Colv = as.dendrogram(hcc), cexRow = 0.5, cexCol = 0.1, breaks = 0, ColSideColors = exptCol)
+legend("topleft",c("g349", "g394", "g419 control"), pch = 15, col = c("darkred", "pink", "green"))
 ```
 
 What we can see here is that there are subsets of genes that show
