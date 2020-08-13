@@ -27,12 +27,48 @@ user guide [here](https://bioconductor.org/packages/release/bioc/vignettes/DESeq
 While the same algorithms might not be used for single-cell analyses,
 the concepts (and inputs) should be similar.
 
+### Installing packages
+
+We will need to install the following packages for the main part of
+the exercise: `DESeq2`, `here` and `NMF`. If we get to batch
+correction, we will also need the `limma` package.
+
+```{r installPackages}
+if(! requireNamespace("DESeq2",quietly=TRUE)){
+    if (! requireNamespace("BiocManager", quietly = TRUE)){
+        install.packages("BiocManager")
+    }
+    BiocManager::install("DESeq2")
+}
+
+if(! requireNamespace("here",quietly=TRUE)){
+  install.packages("here")
+}
+
+if(! requireNamespace("NMF",quietly=TRUE)){
+   install.packages("NMF")
+}
+
+if(! requireNamespace("limma",quietly=TRUE)){
+    if (! requireNamespace("BiocManager", quietly = TRUE)){
+        install.packages("BiocManager")
+    }
+    BiocManager::install("limma")
+}
+```
+
 ### Setting up our R environment
 
 Hopefully, you have installed the `DESeq2` R package. The following
 code will check that it is installed, and will load the library if found.
 
 ```{r DESeq2Setup}
+if(! requireNamespace("here",quietly=TRUE)){
+  install.packages("here")
+}
+
+library(here)
+
 if(! requireNamespace("DESeq2",quietly=TRUE)){
     if (! requireNamespace("BiocManager", quietly = TRUE)){
         install.packages("BiocManager")
@@ -41,12 +77,6 @@ if(! requireNamespace("DESeq2",quietly=TRUE)){
 }
 
 library(DESeq2)
-
-if(! requireNamespace("here",quietly=TRUE)){
-  install.packages("here")
-}
-
-library(here)
 ```
 
 First we read in the data from the file. In this exercise, it is a
@@ -197,13 +227,6 @@ There are quite a few genes that show a small fold change (< 2 fold), but still 
 This is a nice way to show gene expression changes across multiple samples. We'll use a plotting function from the `NMF` package.
 
 ```{r heatmapSetup}
-if(! requireNamespace("NMF",quietly=TRUE)){
-    if (! requireNamespace("BiocManager", quietly = TRUE)){
-        install.packages("BiocManager")
-    }
-    BiocManager::install("NMF")
-}
-
 library(NMF)
 ```
 

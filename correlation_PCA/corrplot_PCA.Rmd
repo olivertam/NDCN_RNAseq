@@ -33,17 +33,23 @@ quick way to do this is to generate a correlation plot using the R
 module `corrplot`
 
 ```{r setup}
+if(! requireNamespace("here",quietly=TRUE)){
+    install.packages("here")
+}
+
+library(here)
+
 if(! requireNamespace("corrplot",quietly=TRUE)){
     install.packages("corrplot")
 }
 
-suppressMessages(library(corrplot))
+library(corrplot)
 ```
 
 First we read in the data from the file
 
 ```{r readCounts}
-data  <-  read.table(gzfile("CRISPR_expt.txt.gz"),sep="\t",header=T,row.names=1)
+data  <-  read.table(gzfile(here("correlation_PCA","CRISPR_expt.txt.gz"),sep="\t",header=T,row.names=1)
 ```
 
 Then we try to correlate the samples (columns in `data`). We can try
@@ -185,7 +191,7 @@ happy to answer them.
 First we read in the data from the file
 
 ```{r readvst}
-data  <-  read.table(gzfile("CRISPR_expt_vst.txt.gz"),sep="\t",header=T,row.names=1)
+data  <-  read.table(gzfile(here("correlation_PCA","CRISPR_expt_vst.txt.gz")),sep="\t",header=T,row.names=1)
 ```
 
 Then we run the pca function (`prcomp`) in R:
