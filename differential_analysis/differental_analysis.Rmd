@@ -205,6 +205,7 @@ log10FDR <- -1 * log10(filtered$padj)
 voldata <- data.frame(filtered$log2FoldChange, log10FDR)
 colnames(voldata) = c("log2FoldChange","neglog10FDR")
 volcolor <- rep("gray", nrow(voldata))
+volcolor[filtered$padj < 0.05] = "black"
 volcolor[filtered$padj < 0.05 & filtered$log2FoldChange > 1] = "red"
 volcolor[filtered$padj < 0.05 & filtered$log2FoldChange < -1] = "blue"
 
@@ -216,9 +217,9 @@ legend("bottomright",c("Significant upregulation", "Significant downregulation")
 ```
 
 Here, we can now see the relationship between fold change and FDR. I'm
-highlighting genes which have > 2 fold change and FDR < 0.05. Three
+highlighting genes which have > 2 fold change and FDR < 0.05 with either red (upregulated) or blue (downregulated), while those that are significant but < 2 fold are in black. Three
 lines are also plotted: blue = 2 fold decrease, red = 2 fold increase,
-black = FDR of 0.05. 
+black = FDR of 0.05.
 
 There are quite a few genes that show a small fold change (< 2 fold), but still considered significant, while a bunch of genes that have larger fold change (> 2 fold) are not significant. This is not unusual, as this is dependent on how "tightly" these genes are expressed across samples (e.g. genes would not be considered significant if the differences between other variables can explain the variation seen in your experiment)
 
@@ -460,6 +461,7 @@ log10FDR <- -1 * log10(filtered$padj)
 voldata <- data.frame(filtered$log2FoldChange, log10FDR)
 colnames(voldata) = c("log2FoldChange","neglog10FDR")
 volcolor <- rep("gray", nrow(voldata))
+volcolor[filtered$padj < 0.05] = "black"
 volcolor[filtered$padj < 0.05 & filtered$log2FoldChange > 1] = "red"
 volcolor[filtered$padj < 0.05 & filtered$log2FoldChange < -1] = "blue"
 
@@ -469,6 +471,13 @@ abline(v = -1, col = "blue", lty = 2)
 abline(h = -log10(0.05), col = "black", lty = 2)
 legend("bottomright",c("Significant upregulation", "Significant downregulation"), cex = 0.5, col=c("red","blue"), pch = 20)
 ```
+
+Compared to the previous volcano plot, we can see the following differences:
+
+1. More genes that are significant
+2. Fewer genes with > 2 fold change that are not significant
+
+This is the result of `DESeq2` correcting for the variation within each replicate before doing the next comparison (guideRNA vs control).
 
 We can also do actual batch correction on the normalized count data so
 that we can use it for downstream analysis or visualization.
