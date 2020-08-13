@@ -41,12 +41,18 @@ if(! requireNamespace("DESeq2",quietly=TRUE)){
 }
 
 library(DESeq2)
+
+if(! requireNamespace("DESeq2",quietly=TRUE)){
+  install.packages("here")
+}
+
+library(here)
 ```
 
-First we read in the data from the file. This is a 
+First we read in the data from the file. This is a .gz file.
 
 ```{r readCounts}
-data  <-  read.table(gzfile("CRISPR_expt.cntTable.gz"),sep="\t",header=T,row.names=1)
+data  <-  read.table(gzfile(here("differential_analysis", "CRISPR_expt.cntTable.gz")),sep="\t",header=T,row.names=1)
 head(data)
 ```
 
@@ -55,7 +61,7 @@ is a small table with relevant information like experiment, replicate,
 disease state, gender etc.
 
 ```{r readMetadata}
-mdata <- read.table("CRISPR_expt_metadata.txt",sep="\t",header=T,row.names=1)
+mdata <- read.table(here("differential_analysis", "CRISPR_expt_metadata.txt"),sep="\t",header=T,row.names=1)
 head(mdata)
 ```
 
@@ -135,7 +141,7 @@ head(sig)
 Now we have a list of genes that are "significantly" different between
 our guide RNA experiment and our control.
 
-### Visualization our data
+### Visualizing our data
 
 There are several ways we can visualize our data
 
@@ -148,6 +154,8 @@ lying on `y = 0`, since we typically don't expect a global change in
 gene expression. Deviations from this could indicate some potential
 technical noise.
 
+The `plotMA` function is from the `DESeq2` package.
+
 ```{r plotMA}
 plotMA(res, ylim = c(-5,5))
 ```
@@ -159,6 +167,7 @@ In the graph above, things that are differentially expressed
 
 This is another way to show the data, where we plot the log fold
 change on the x-axis, and the FDR (-log10) on the y-axis. 
+
 
 ```{r volcanoPlot}
 filtered <- res[! is.na(res$padj), ]
@@ -185,7 +194,7 @@ There are quite a few genes that show a small fold change (< 2 fold), but still 
 
 3) Heatmap
 
-This is a nice way to show gene expression changes across multiple samples
+This is a nice way to show gene expression changes across multiple samples. We'll use a plotting function from the `NMF` package.
 
 ```{r heatmapSetup}
 if(! requireNamespace("NMF",quietly=TRUE)){
@@ -260,9 +269,15 @@ head(sigVst)
 
 Now we can plot the heatmap:
 
+`aheatmap` is from the `NMF` package.
+
 ```{r heatmap}
 aheatmap(as.matrix(sigVst), color = "-RdBu:256", scale = "row", Rowv = NA, Colv = TRUE, legend = TRUE, cexRow = 0.5, cexCol = 0.1, breaks = 0, annCol = columnAnn, annRow = rowAnn, annColors = annColor)
 ```
+
+Julie: Oliver, it looks like this can't run in RStudio unfortunately. This has been a bug for awhile; maybe we can talk about how to plot this from baseR but this is definitely a bummer. 
+I got this error: `Error in gridPLT() : Figure region too small and/or viewport too large`
+https://github.com/renozao/NMF/issues/65
 
 A few things to notice:
 
