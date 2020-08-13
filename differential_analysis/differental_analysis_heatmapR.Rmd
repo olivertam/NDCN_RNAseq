@@ -271,6 +271,12 @@ gRNAcol[mdata$guideID == "g394"] = "pink"
 gRNAcol[mdata$guideID == "g419"] = "green"
 
 repCol <- as.vector(mdata$replicate)
+repCol[repCol == 1] = palette()[1]
+repCol[repCol == 2] = palette()[2]
+repCol[repCol == 3] = palette()[3]
+repCol[repCol == 4] = palette()[4]
+
+head(data.frame(exptCol,gRNAcol,repCol))
 ```
 
 I tend to sort my gene expression by log2 fold change, rather than use
@@ -285,9 +291,9 @@ head(sigVst)
 Now we can plot the heatmap:
 
 ```{r heatmap}
-hcc = hclust(as.dist(1-cor(sigGenes,method="pearson")),method="average")
-heatmap(as.matrix(sigVst), color = colorRampPalette(c("red","blue"))(256), scale = "row", Rowv = NA, Colv = as.dendrogram(hcc), cexRow = 0.5, cexCol = 0.1, breaks = 0, ColSideColors = exptCol)
-legend("topleft",c("guide RNA", "control"), pch = 15, col = c("red", "green"))
+hcc = hclust(as.dist(1-cor(sigVst,method="pearson")),method="average")
+heatmap(as.matrix(sigVst), col = colorRampPalette(c("red","blue"))(256), scale = "row", Rowv = NA, Colv = as.dendrogram(hcc), cexRow = 0.5, cexCol = 0.8, ColSideColors = exptCol)
+legend("topleft",c("guide RNA", "control"), pch = 15, col = c("red", "green"),cex=0.5)
 ```
 
 A few things to notice:
@@ -302,13 +308,13 @@ A few things to notice:
 
 We could also allow the program to use hierarchical clustering on the
 genes to see if there are "groups" of genes that have similar
-expression across the samples. This time, I'm coloring by guide RNA used
+expression across the samples. This time, I'm coloring by the replicates
 
 ```{r heatmap2}
-hcc = hclust(as.dist(1-cor(sigGenes,method="pearson")),method="average")
-hcr = hclust(as.dist(1-cor(t(sigGenes),method="pearson")),method="average")
-heatmap(as.matrix(sigVst), color = colorRampPalette(c("red","blue"))(256), scale = "row", Rowv = as.dendrogram(hcr), Colv = as.dendrogram(hcc), cexRow = 0.5, cexCol = 0.1, breaks = 0, ColSideColors = exptCol)
-legend("topleft",c("g349", "g394", "g419 control"), pch = 15, col = c("darkred", "pink", "green"))
+hcc = hclust(as.dist(1-cor(sigVst,method="pearson")),method="average")
+hcr = hclust(as.dist(1-cor(t(sigVst),method="pearson")),method="average")
+heatmap(as.matrix(sigVst), col = colorRampPalette(c("red","blue"))(256), scale = "row", Rowv = as.dendrogram(hcr), Colv = as.dendrogram(hcc), cexRow = 0.5, cexCol = 0.8, ColSideColors = repCol)
+legend("topleft",paste0("replicate",seq(1,4)), pch = 15, col = seq(1,4),cex=0.5)
 ```
 
 What we can see here is that there are subsets of genes that show
