@@ -59,8 +59,8 @@ if(! requireNamespace("limma",quietly=TRUE)){
 
 ### Setting up our R environment
 
-Hopefully, you have installed the `DESeq2` R package. The following
-code will check that it is installed, and will load the library if found.
+Hopefully, you have installed the `here` and `DESeq2` R packages. The following
+code will check that it is installed, and will load the libraries if found.
 
 ```{r DESeq2Setup}
 if(! requireNamespace("here",quietly=TRUE)){
@@ -217,15 +217,24 @@ legend("bottomright",c("Significant upregulation", "Significant downregulation")
 ```
 
 Here, we can now see the relationship between fold change and FDR. I'm
-highlighting genes which have > 2 fold change and FDR < 0.05 with either red (upregulated) or blue (downregulated), while those that are significant but < 2 fold are in black. Three
-lines are also plotted: blue = 2 fold decrease, red = 2 fold increase,
+highlighting genes which have > 2 fold change and FDR < 0.05 with
+either red (upregulated) or blue (downregulated), while those that are
+significant but < 2 fold are in black. 
+Three lines are also plotted: blue = 2 fold decrease, red = 2 fold increase,
 black = FDR of 0.05.
 
-There are quite a few genes that show a small fold change (< 2 fold), but still considered significant, while a bunch of genes that have larger fold change (> 2 fold) are not significant. This is not unusual, as this is dependent on how "tightly" these genes are expressed across samples (e.g. genes would not be considered significant if the differences between other variables can explain the variation seen in your experiment)
+There are quite a few genes that show a small fold change (< 2 fold),
+but still considered significant, while a bunch of genes that have
+larger fold change (> 2 fold) are not significant. This is not
+unusual, as this is dependent on how "tightly" these genes are
+expressed across samples (e.g. genes would not be considered
+significant if the differences between other variables can explain the
+variation seen in your experiment)
 
 3) Heatmap
 
-This is a nice way to show gene expression changes across multiple samples. We'll use a plotting function from the `NMF` package.
+This is a nice way to show gene expression changes across multiple
+samples. We'll use a plotting function from the `NMF` package.
 
 ```{r heatmapSetup}
 library(NMF)
