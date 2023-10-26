@@ -15,13 +15,13 @@ in your libraries.
 First we would download the FastQC program:
 
 If you are using a PC or Linux, you can download it
-  [here](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip)
+  [here](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zip)
 * Unzip the file, and open the FastQC folder
 * Doubleclick on run_fastqc.bat
 <img src="screenshots/fastqc_pc.png" width="300" />
 
 
-If you are using a Mac, you can download it [here](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.dmg)
+If you are using a Mac, you can download it [here](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.dmg)
 * Doubleclick on the downloaded DMG file to open it
 * Doubleclick on the FastQC app
   * The first time that you are opening this, you may need to hold
